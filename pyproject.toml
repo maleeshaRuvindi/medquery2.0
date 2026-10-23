@@ -1,0 +1,30 @@
+[project]
+name = "medquery2-0"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Maleesha Ruvindi", email = "maleesharuvindi1999@gmail.com" }
+]
+requires-python = ">=3.10"
+dependencies = [
+    "dotenv>=0.9.9",
+    "en-core-web-lg",
+    "langchain>=1.4.6",
+    "langchain-openai>=1.7.2",
+    "langgraph>=1.2.16",
+    "langsmith>=0.14.11",
+    "pandas>=2.3.3",
+    "presidio-analyzer>=2.2.364",
+    "presidio-anonymizer>=2.2.364",
+    "sqlglot>=30.23.0",
+]
+
+[project.scripts]
+medquery2-0 = "medquery2_0:main"
+
+[tool.uv]
+package = false 
+
+[tool.uv.sources]
+en-core-web-lg = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl" }
