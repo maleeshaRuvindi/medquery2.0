@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  AWS_REGION: us-east-1 # change to yours
+  AWS_REGION: eu-north-1 # change to yours
   ECR_REPOSITORY: medquery
   LAMBDA_FUNCTION: medquery-lambda
 
