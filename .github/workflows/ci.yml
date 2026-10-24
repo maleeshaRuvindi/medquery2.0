@@ -1,32 +1,51 @@
-name: CI
+name: Deploy MedQuery
 
 on:
   push:
     branches: [main]
-  pull_request:
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1 # change to yours
+  ECR_REPOSITORY: medquery
+  LAMBDA_FUNCTION: medquery-lambda
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
-          python-version: "3.12"
-          cache: pip
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Install dependencies
-        run: pip install -r requirements.txt
+      - id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Run tests
-        run: pytest -q
-        
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker image
-        run: docker build -t medquery:ci .
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          provenance: false # important: Lambda rejects attestation manifests
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Update Lambda to new image
+        run: |
+          aws lambda update-function-code \
+            --function-name $LAMBDA_FUNCTION \
+            --image-uri ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          aws lambda wait function-updated --function-name $LAMBDA_FUNCTION
